@@ -116,6 +116,9 @@ class Board:
                     count += 1
         return count
 
+    def die_plant(self, x, y):
+        self.board[x][y] = 'grass.png'
+
 
 class ChoicePlant:
     # создание поля
@@ -218,7 +221,9 @@ class ControlPanel:
 
 EVENTMOVEENEMY = pygame.USEREVENT + 1
 SUMSUNFLOWERS = pygame.USEREVENT + 2
-STARTGAME = pygame.USEREVENT + 5
+STARTGAME = pygame.USEREVENT + 3
+EATPLANTS = pygame.USEREVENT + 4
+
 pygame.time.set_timer(STARTGAME, 10000)
 pygame.time.set_timer(EVENTMOVEENEMY, 90)
 pygame.time.set_timer(SUMSUNFLOWERS, 2000)
@@ -231,15 +236,22 @@ class Animals:
         self.y = 60
         self.x = 730
         self.top = 50
+        self.fl = True
+        self.attack = 0
+        self.pos = 0
+        self.flag_rtrn_square = False
+        self.square = 0
+        self.hp = 0
+        self.hp_animal = 100
         self.radius_circle = 30
         self.col = col
         self.map_plants = []
-        self.sl_attack = {
+        self.sl_attack_plants = {
             'sunflower4.png': 0,
             'fighter_chamomile2.png': 80,
             'Venerina_muholovka2.png': 40,
             'potato2.png': 0}
-        self.sl_hp = {
+        self.sl_hp_plants = {
             'sunflower4.png': 20,
             'fighter_chamomile2.png': 10,
             'Venerina_muholovka2.png': 40,
@@ -255,7 +267,8 @@ class Animals:
         for y in range(self.col):
             if self.map[y] == 1:
                 pygame.draw.circle(screen, pygame.color.Color('pink'), (self.x, self.top + self.y * y + self.radius_circle), self.radius_circle)
-        self.x -= 1
+        if self.fl:
+            self.x -= 1
 
     def check_go_left(self):
         return self.x + self.radius_circle > 140
@@ -263,16 +276,18 @@ class Animals:
     def check_left(self):
         return self.x + self.radius_circle == 140
 
-    def return_plant(self, board):
+    def check_plant(self, board):
         col = 0
-        pos = len(board[0])
+        self.pos = 0
         sp_pl = []
         for sp in board:
             if self.map[col] != 0:
-                square = (self.x - 80) // 60
-                if square < 9:
-                    if sp[square] != '' and sp[square] != 'grass.png':
-                        sp_pl.append(sp[square])
+                square1 = (self.x - 50) // 60
+                if square1 < 9:
+                    if sp[square1] != '' and sp[square1] != 'grass.png':
+                        sp_pl.append(sp[square1])
+                        self.pos = col
+                        self.square = square1
                     else:
                         sp_pl.append('')
                 else:
@@ -284,10 +299,33 @@ class Animals:
             print(sp_pl)
             self.sp_pl = sp_pl
             if sp_pl != ['', '', '', '', '']:
+                pygame.time.set_timer(EATPLANTS, 2000)
                 self.reaction_on_plant()
 
     def reaction_on_plant(self):
-        print(self.sl_attack[self.sp_pl[0]], self.sl_hp[self.sp_pl[0]])
+        if self.fl:
+            self.fl = False
+        self.attack = self.sl_attack_plants[self.sp_pl[self.pos]]
+        self.hp = self.sl_hp_plants[self.sp_pl[self.pos]]
+
+    def change_plants(self):
+        print('         kill plant', self.hp, self.attack, self.hp_animal)
+        self.hp -= 10
+        self.hp_animal -= self.attack
+        if self.hp <= 0:
+            self.flag_rtrn_square = True
+            pygame.time.set_timer(EATPLANTS, 0)
+            self.fl = True
+        if self.hp_animal <= 0:
+            self.fl = False
+            self.x = 140 - self.radius_circle
+
+    def rtrn_tile(self):
+        if self.flag_rtrn_square:
+            return self.pos, self.square
+            self.flag_rtrn_square = False
+        else:
+            return None, None
 
 
 class Seeds:
@@ -355,7 +393,7 @@ def main():
                     if animals.check_go_left():
                         screen.blit(screen2, (0, 0))
                         animals.render(screen)
-                        animals.return_plant(board.rtrn_board())
+                        animals.check_plant(board.rtrn_board())
                     if animals.check_left():
                         screen.blit(screen2, (0, 0))
                 if event.type == SUMSUNFLOWERS:
@@ -364,6 +402,12 @@ def main():
                         controlpanel.sum_money(money1)
                         controlpanel.render(screen2)
                         board.chk_money()
+                if event.type == EATPLANTS:
+                    animals.change_plants()
+                    a, b = animals.rtrn_tile()
+                    if a != None:
+                        board.die_plant(a, b)
+                        board.render_plants(screen, screen2, screen3, (b, a))
 
         pygame.display.flip()
 
