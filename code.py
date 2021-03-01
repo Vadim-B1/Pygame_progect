@@ -477,7 +477,6 @@ def main():
             pygame.draw.rect(screen4, (0, 255, 0), (text_x - 10, text_y - 10,
                                                    text_w + 20, text_h + 20), 3)
             screen4.blit(text, (text_x, text_y))
-            screen4.blit(text, (250, 25))
             screen.blit(screen4, (0, 0))
         if lose:
             strt_gm = False
@@ -492,7 +491,6 @@ def main():
             pygame.draw.rect(screen5, (0, 255, 0), (text_x - 10, text_y - 10,
                                                    text_w + 20, text_h + 20), 3)
             screen5.blit(text, (text_x, text_y))
-            screen5.blit(text, (250, 25))
             screen.blit(screen5, (0, 0))
 
 
