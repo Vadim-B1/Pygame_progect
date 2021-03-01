@@ -92,10 +92,11 @@ class Board:
         if cell_coords != None:
             x, y = cell_coords
             if money >= self.chk_money():
-                self.minus = self.chk_money()
                 if self.last_choice_plant != '' and (
-                        self.board[y][x] == '' or self.last_choice_plant == 'grass.png' or self.board[y][x] == 'grass.png'):
+                        self.board[y][x] == '' or self.last_choice_plant == 'grass.png' or self.board[y][x] == 'grass.png') \
+                        and self.board[y][x] != self.last_choice_plant:
                     self.board[y][x] = self.last_choice_plant
+                    self.minus = self.chk_money()
             else:
                 self.minus = 0
 
@@ -118,6 +119,11 @@ class Board:
 
     def die_plant(self, x, y):
         self.board[x][y] = 'grass.png'
+
+    def clear(self):
+        self.board = [['grass.png'] * self.width for _ in range(self.height)]
+        self.last_choice_plant = ''
+        self.minus = 0
 
 
 class ChoicePlant:
@@ -169,6 +175,9 @@ class ChoicePlant:
         cell = self.get_cell(mouse_pos)
         return self.on_click(cell)
 
+    def clear(self):
+        self.board = [[0] * self.height]
+
 
 class Shovel:
     def __init__(self):
@@ -214,6 +223,9 @@ class ControlPanel:
     def minus_money(self, minus):
         self.money -= minus
 
+    def clear(self):
+        self.money = 15
+
 
 # class PointsAppear:
 #   def__init__(self):
@@ -226,7 +238,7 @@ EATPLANTS = pygame.USEREVENT + 4
 
 pygame.time.set_timer(STARTGAME, 12000)
 pygame.time.set_timer(EVENTMOVEENEMY, 50)
-pygame.time.set_timer(SUMSUNFLOWERS, 2000)
+pygame.time.set_timer(SUMSUNFLOWERS, 3000)
 
 
 class Animals:
@@ -257,7 +269,7 @@ class Animals:
         self.sl_hp_plants = {
             'sunflower4.png': 20,
             'fighter_chamomile2.png': 0,
-            'Venerina_muholovka2.png': 40,
+            'Venerina_muholovka2.png': 20,
             'potato2.png': 70}
 
         for i in range(col):
@@ -402,9 +414,19 @@ def main():
             if event.type == STARTGAME:
                 if strt_gm == False:
                     strt_gm = True
-                    print('Game start')
             if not strt_gm and not win and not lose:
                 screen.blit(screen6, (0, 0))
+            if event.type == pygame.MOUSEBUTTONUP and not strt_gm and (win or lose):
+                x, y = event.pos
+                if text_x <= x <= (text_x + text_w) and text_y <= y <= (text_y + text_h):
+                    strt_gm = True
+                    win = False
+                    lose = False
+                    board.clear()
+                    board.render_cells(screen2)
+                    controlpanel.clear()
+                    animals.clear()
+                    screen.blit(screen2, (0, 0))
             if strt_gm:
                 if event.type == pygame.MOUSEBUTTONUP:
                     if board.get_cell(event.pos) is not None:
@@ -436,7 +458,6 @@ def main():
                     animals.change_plants()
                     a, b = animals.rtrn_tile()
                     if a != None:
-                        print(a, b)
                         board.die_plant(a, b)
                         board.render_plants(screen, screen2, screen3, (b, a))
 
@@ -445,9 +466,33 @@ def main():
         lose = animals.check_left()
         if win:
             strt_gm = False
+            font = pygame.font.Font(None, 30)
+            text = font.render('Start', True, (0, 0, 0))
+            text_x = 700 // 2 - text.get_width() // 2
+            text_y = 400 // 2 - text.get_height() // 2 + 110
+            text_w = text.get_width()
+            text_h = text.get_height()
+            pygame.draw.rect(screen4, (255, 255, 255), (text_x - 10, text_y - 10,
+                                                   text_w + 20, text_h + 20))
+            pygame.draw.rect(screen4, (0, 255, 0), (text_x - 10, text_y - 10,
+                                                   text_w + 20, text_h + 20), 3)
+            screen4.blit(text, (text_x, text_y))
+            screen4.blit(text, (250, 25))
             screen.blit(screen4, (0, 0))
         if lose:
             strt_gm = False
+            font = pygame.font.Font(None, 30)
+            text = font.render('Start', True, (0, 0, 0))
+            text_x = 700 // 2 - text.get_width() // 2
+            text_y = 400 // 2 - text.get_height() // 2 + 110
+            text_w = text.get_width()
+            text_h = text.get_height()
+            pygame.draw.rect(screen5, (255, 255, 255), (text_x - 10, text_y - 10,
+                                                   text_w + 20, text_h + 20))
+            pygame.draw.rect(screen5, (0, 255, 0), (text_x - 10, text_y - 10,
+                                                   text_w + 20, text_h + 20), 3)
+            screen5.blit(text, (text_x, text_y))
+            screen5.blit(text, (250, 25))
             screen.blit(screen5, (0, 0))
 
 
