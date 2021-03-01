@@ -224,14 +224,17 @@ SUMSUNFLOWERS = pygame.USEREVENT + 2
 STARTGAME = pygame.USEREVENT + 3
 EATPLANTS = pygame.USEREVENT + 4
 
-pygame.time.set_timer(STARTGAME, 10000)
-pygame.time.set_timer(EVENTMOVEENEMY, 90)
+pygame.time.set_timer(STARTGAME, 12000)
+pygame.time.set_timer(EVENTMOVEENEMY, 50)
 pygame.time.set_timer(SUMSUNFLOWERS, 2000)
 
 
 class Animals:
     def __init__(self, col):
-        self.map = [1, 0, 0, 0, 0]
+        self.fl_chk_lose = False
+        self.delay_move_animal = 45
+        self.map = [0, 0, 0, 0, 0]
+        self.map[random.randrange(0, 4)] = 1
         self.sp_pl = ['', '', '', '', '']
         self.y = 60
         self.x = 730
@@ -243,38 +246,36 @@ class Animals:
         self.square = 0
         self.hp = 0
         self.hp_animal = 100
-        self.radius_circle = 30
         self.col = col
         self.map_plants = []
+        self.hp_all_animals = [[''] * 9 for _ in range(5)]
         self.sl_attack_plants = {
             'sunflower4.png': 0,
-            'fighter_chamomile2.png': 80,
+            'fighter_chamomile2.png': 100,
             'Venerina_muholovka2.png': 40,
             'potato2.png': 0}
         self.sl_hp_plants = {
             'sunflower4.png': 20,
-            'fighter_chamomile2.png': 10,
+            'fighter_chamomile2.png': 0,
             'Venerina_muholovka2.png': 40,
-            'potato2.png': 60}
+            'potato2.png': 70}
 
         for i in range(col):
             self.map_plants.append([0, 0, 0, 0, 0, 0, 0, 0, 0])
-#            self.map.append(random.choice([0, 1]))
-        print(self.map)
-        print(self.map_plants)
 
     def render(self, screen):
-        for y in range(self.col):
-            if self.map[y] == 1:
-                pygame.draw.circle(screen, pygame.color.Color('pink'), (self.x, self.top + self.y * y + self.radius_circle), self.radius_circle)
-        if self.fl:
-            self.x -= 1
+        if self.hp_animal > 0:
+            for y in range(self.col):
+                if self.map[y] == 1:
+                    screen.blit(load_image('ball.png', 60, 65, -1), (self.x, self.top + self.y * y))
+            if self.fl:
+                self.x -= 1
 
     def check_go_left(self):
-        return self.x + self.radius_circle > 140
+        return self.x > 80
 
     def check_left(self):
-        return self.x + self.radius_circle == 140
+        return self.x == 80
 
     def check_plant(self, board):
         col = 0
@@ -282,7 +283,7 @@ class Animals:
         sp_pl = []
         for sp in board:
             if self.map[col] != 0:
-                square1 = (self.x - 50) // 60
+                square1 = (self.x - 20) // 60
                 if square1 < 9:
                     if sp[square1] != '' and sp[square1] != 'grass.png':
                         sp_pl.append(sp[square1])
@@ -296,7 +297,6 @@ class Animals:
                 sp_pl.append('')
             col += 1
         if sp_pl != self.sp_pl:
-            print(sp_pl)
             self.sp_pl = sp_pl
             if sp_pl != ['', '', '', '', '']:
                 pygame.time.set_timer(EATPLANTS, 2000)
@@ -305,11 +305,10 @@ class Animals:
     def reaction_on_plant(self):
         if self.fl:
             self.fl = False
-        self.attack = self.sl_attack_plants[self.sp_pl[self.pos]]
         self.hp = self.sl_hp_plants[self.sp_pl[self.pos]]
+        self.attack = self.sl_attack_plants[self.sp_pl[self.pos]]
 
     def change_plants(self):
-        print('         kill plant', self.hp, self.attack, self.hp_animal)
         self.hp -= 10
         self.hp_animal -= self.attack
         if self.hp <= 0:
@@ -318,19 +317,40 @@ class Animals:
             self.fl = True
         if self.hp_animal <= 0:
             self.fl = False
-            self.x = 140 - self.radius_circle
+            self.clear()
 
     def rtrn_tile(self):
         if self.flag_rtrn_square:
-            return self.pos, self.square
             self.flag_rtrn_square = False
+            ps = self.pos
+            sqr = self.square
         else:
-            return None, None
+            ps = None
+            sqr = None
+        self.pos = 0
+        self.square = 0
+        return ps, sqr
 
+    def clear(self):
+        pygame.time.set_timer(EVENTMOVEENEMY, self.delay_move_animal)
+        if self.delay_move_animal > 5:
+            self.delay_move_animal -= 5
+        self.map = [0, 0, 0, 0, 0]
+        self.map[random.randrange(0, 4)] = 1
+        self.sp_pl = ['', '', '', '', '']
+        self.y = 60
+        self.x = 730
+        self.top = 50
+        self.fl = True
+        self.attack = 0
+        self.hp = 0
+        self.hp_animal = 100
+        self.map_plants = []
+        for i in range(self.col):
+            self.map_plants.append([0, 0, 0, 0, 0, 0, 0, 0, 0])
 
-class Seeds:
-    def __init__(self, screen):
-        pass
+    def chk_win(self):
+        return self.delay_move_animal == 5
 
 
 def main():
@@ -345,6 +365,12 @@ def main():
     screen = pygame.display.set_mode((size_window_length, size_window_width))
     screen2 = pygame.Surface(screen.get_size())
     screen3 = pygame.Surface((60, 60))
+    screen4 = pygame.Surface((screen.get_size()))
+    screen5 = pygame.Surface((screen.get_size()))
+    screen6 = pygame.Surface((screen.get_size()))
+    screen4.blit(pygame.image.load(os.path.join('images', 'you_win.png')), (0, 0))
+    screen5.blit(pygame.image.load(os.path.join('images', 'you_lose.png')), (0, 0))
+    screen6.blit(pygame.image.load(os.path.join('images', 'game_start.png')), (0, 0))
     screen3.blit(load_image('grass.png', 60, 60), (0, 0))
     board = Board(quantity_length, quantity_width)
     choiceplant = ChoicePlant(4)
@@ -367,6 +393,8 @@ def main():
     screen2.blit(screen, (0, 0))
     pygame.display.flip()
     strt_gm = False
+    win = False
+    lose = False
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -375,6 +403,8 @@ def main():
                 if strt_gm == False:
                     strt_gm = True
                     print('Game start')
+            if not strt_gm and not win and not lose:
+                screen.blit(screen6, (0, 0))
             if strt_gm:
                 if event.type == pygame.MOUSEBUTTONUP:
                     if board.get_cell(event.pos) is not None:
@@ -406,10 +436,19 @@ def main():
                     animals.change_plants()
                     a, b = animals.rtrn_tile()
                     if a != None:
+                        print(a, b)
                         board.die_plant(a, b)
                         board.render_plants(screen, screen2, screen3, (b, a))
 
         pygame.display.flip()
+        win = animals.chk_win()
+        lose = animals.check_left()
+        if win:
+            strt_gm = False
+            screen.blit(screen4, (0, 0))
+        if lose:
+            strt_gm = False
+            screen.blit(screen5, (0, 0))
 
 
 if __name__ == "__main__":
